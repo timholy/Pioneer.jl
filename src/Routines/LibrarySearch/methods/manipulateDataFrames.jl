@@ -438,6 +438,7 @@ function initQuantScans(
         (:longest_y,                UInt8)
         (:b_count,                  UInt8)
         (:y_count,                  UInt8)
+        (:p_count,                  UInt8)
         (:isotope_count,            UInt8)
         (:total_ions,               UInt8)
         (:poisson,                  Float16)
