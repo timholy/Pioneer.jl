@@ -7,7 +7,7 @@ struct LibraryPrecursorIon{T<:AbstractFloat} <: LibraryIon{T}
     mz::T
 
     is_decoy::Bool
-
+    entrapment::UInt8
     proteome_identifiers::String
     accession_numbers::String
     sequence::String

@@ -20,14 +20,10 @@ ARGS_ = Dict(
 
 
 ARGS_ = Dict(
-    "params_json" =>  joinpath("/Users","n.t.wamsley","RIS_temp","ASMS_2024",
-                            "UNISPEC_LIBS","THREE_PROTEOME_ASTRAL_by_052424",
-                            "buildFragmentIndex.json"),
+    "params_json" => "/Users/n.t.wamsley/Desktop/entrapment_lib_052724/config.json.txt",
 
-    "pioneer_lib_dir" => joinpath("/Users","n.t.wamsley","RIS_temp","ASMS_2024",
-    "UNISPEC_LIBS","THREE_PROTEOME_052224","ASTRAL_NCE25","THREE_PROTEOME_ASTRAL_052624"),
-    "out_dir" => joinpath("/Users","n.t.wamsley","RIS_temp","ASMS_2024",
-    "UNISPEC_LIBS","THREE_PROTEOME_052224","ASTRAL_NCE25","THREE_PROTEOME_ASTRAL_052624")
+    "pioneer_lib_dir" => "/Users/n.t.wamsley/Desktop/entrapment_lib_052724/",
+    "out_dir" => "/Users/n.t.wamsley/Desktop/entrapment_lib_052724/pioneer_lib"
 
 )
 
@@ -98,9 +94,9 @@ frag_ranges_path = [joinpath(PIONEER_LIB_DIR , file) for file in filter(file -> 
 @time id_to_annotation = Arrow.Table(id_to_annotation_path)
 @time frags_table = Arrow.Table(frags_table_path)
 @time frag_ranges_table = Arrow.Table(frag_ranges_path)
-frag_ranges = Vector{UnitRange{UInt32}}(undef, length(frag_ranges_table[:start]))
+frag_ranges = Vector{UnitRange{UInt64}}(undef, length(frag_ranges_table[:start]))
 for i in range(1, length(frag_ranges))
-    frag_ranges[i] = range(UInt32(frag_ranges_table[:start][i]), UInt32(frag_ranges_table[:stop][i]))
+    frag_ranges[i] = range(UInt64(frag_ranges_table[:start][i]), UInt64(frag_ranges_table[:stop][i]))
 end
 id_to_annotation = [x for x in id_to_annotation[:id_to_annotation]]
 #@time pioneer_lib = Arrow.Table(ARGS_["pioneer_lib_dir"])
@@ -112,12 +108,13 @@ id_to_annotation = [x for x in id_to_annotation[:id_to_annotation]]
 @time prec_frags = load(joinpath("/Users","n.t.wamsley","RIS_temp","ASMS_2024",
                             "UNISPEC_LIBS","THREE_PROTEOME_052224","ASTRAL_NCE25",
                             "test_lib_prec_frags.jld2"))["prec_frags"];
-=#
+
 @time sorted_indices = sortPrositLib(
     pioneer_lib[:mz],
     pioneer_lib[:irt],
     params_[:rt_bin_tol]
 )
+=#
 frag_bounds, prec_mz_min, prec_mz_max = nothing, nothing, nothing
 if params_[:auto_detect_frag_bounds]
 
@@ -144,18 +141,19 @@ simple_fragments, folder_out = parsePioneerLib(
     pioneer_lib[:irt],
     pioneer_lib[:mz],
     pioneer_lib[:decoy],
+    pioneer_lib[:entrapment],
 
     collect(frags_table[:mz]),
     collect(frags_table[:intensity]),
-    collect(frags_table[:ion_type]),
-    collect(frags_table[:is_y]),
-    collect(frags_table[:frag_index]),
-    collect(frags_table[:charge]),
-    collect(frags_table[:isotope]),
-    collect( frags_table[:internal]),
-    collect(frags_table[:immonium]),
-    collect(frags_table[:internal_ind]),
-    collect(frags_table[:sulfur_count]),
+    frags_table[:ion_type],
+    frags_table[:is_y],
+    frags_table[:frag_index],
+    frags_table[:charge],
+    frags_table[:isotope],
+    frags_table[:internal],
+    frags_table[:immonium],
+    frags_table[:internal_ind],
+    frags_table[:sulfur_count],
 
     pioneer_lib[:proteome_name],
     pioneer_lib[:protein_name],

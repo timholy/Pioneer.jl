@@ -158,6 +158,7 @@ function parsePioneerLib(
                         irt::AbstractArray{Float32},
                         prec_mz::AbstractArray{Float32},
                         decoy::AbstractArray{Bool},
+                        entrapment::AbstractArray{UInt8},
 
                         frag_mz::AbstractArray{Float32},
                         frag_intensity::AbstractArray{Float16},
@@ -180,7 +181,7 @@ function parsePioneerLib(
                         charge::AbstractArray{UInt8},
                         sulfur_count::AbstractArray{UInt8},
                         sequence_length::AbstractArray{UInt8},
-                        prec_frag_ranges::Vector{UnitRange{UInt32}},
+                        prec_frag_ranges::Vector{UnitRange{U}},
                         #prec_frags::Vector{PioneerFrag},
                         frag_bounds::FragBoundModel,
                         prec_mz_min::T,
@@ -193,10 +194,10 @@ function parsePioneerLib(
                         y_start::Int64 = 3, 
                         b_start::Int64 = 2,
                         missed_cleavage_regex::Regex = r"[KR][^U|\$]",
-                        ) where {T<:AbstractFloat}
+                        ) where {T<:AbstractFloat, U<:Unsigned}
 
     max_rank_index = length(rank_to_score)
-
+    frag_range_type = typeof(first(first(prec_frag_ranges)))
     println("sorting precursors...")
     @time sorted_indices = sortPrositLib(
         prec_mz,
@@ -218,7 +219,7 @@ function parsePioneerLib(
     println("frag_count $frag_count")
     frags_detailed = Vector{DetailedFrag{Float32}}(undef, frag_count)
     #Keeps track of with fragments in "frags_detailed" correspond to which precursor
-    precursor_indices = Vector{UnitRange{UInt32}}(undef, N_precs)
+    precursor_indices = Vector{UnitRange{UInt64}}(undef, N_precs)
     #Detailed specification for each precursor. 
     precursors = Vector{LibraryPrecursorIon{Float32}}(undef, N_precs)
     #Used to fuild the framgment index for MSFragger-like searching. 
@@ -244,7 +245,7 @@ function parsePioneerLib(
                                 exclude_from_index::Set{Char},
                                 frags_simple_idx::Int64, 
                                 rank_to_score::Vector{UInt8},
-                                prec_idx::Int64,
+                                prec_idx::I,
                                 prec::LibraryPrecursorIon{T},
                                 prosit_frags::Vector{PioneerFrag}, #Critically, must be sorted in descending order by predicted intensity
                                 max_frag_idx::Int64,
@@ -252,7 +253,7 @@ function parsePioneerLib(
                                 frag_mz_min::T,
                                 frag_mz_max::T,
                                 y_start::Int64,
-                                b_start::Int64) where {T<:AbstractFloat}
+                                b_start::Int64) where {T<:AbstractFloat,I<:Integer}
 
         #Is assumed that frags are sorted in ascending rank order 
         simple_frags_added = 0
@@ -285,13 +286,13 @@ function parsePioneerLib(
     #detailed frags list. Under m/z and minimum y/b index constraints 
     function addDetailedFrags!(frags_detailed::Vector{DetailedFrag{T}},
                                 frags_detailed_idx::Int64,
-                                prec_idx::Int64,
+                                prec_idx::I,
                                 prec::LibraryPrecursorIon{T},
                                 prosit_frags::Vector{PioneerFrag},
                                 max_frag_idx::Int64,
                                 frag_mz_min::T,
                                 frag_mz_max::T,
-                                y_start::Int64, b_start::Int64) where {T<:AbstractFloat}
+                                y_start::Int64, b_start::Int64) where {T<:AbstractFloat,I<:Integer}
         detailed_frags_added = 0
         for i in range(1, max_frag_idx)
             frag = prosit_frags[i]
@@ -320,11 +321,12 @@ function parsePioneerLib(
 
     #Add a precursor ion to the precursors list 
     function addPrecursor!(precursors::Vector{LibraryPrecursorIon{Float32}}, 
-                            precursor_idx::Int64,
+                            precursor_idx::I,
                             irt::AbstractFloat,
                             prec_mz::AbstractFloat,
 
                             decoy::Bool,
+                            entrapment::UInt8,
 
                             proteome_name::String,
                             accession_numbers::String,
@@ -334,7 +336,7 @@ function parsePioneerLib(
 
                             charge::UInt8,
                             sulfur_count::UInt8,
-                            sequence_length::UInt8)
+                            sequence_length::UInt8) where {I<:Integer}
 
         precursor_idx += 1
 
@@ -349,7 +351,7 @@ function parsePioneerLib(
             Float32(irt),
             Float32(prec_mz), #need to fix chronologer output to include precursor mz from the prosit table
             decoy,
-
+            entrapment,
             proteome_name,
             accession_numbers,
             sequence,
@@ -409,6 +411,7 @@ function parsePioneerLib(
                         irt[row_idx],
                         prec_mz[row_idx],
                         decoy[row_idx],
+                        entrapment[row_idx],
                         proteome_names[row_idx],
                         accession_numbers[row_idx],
                         sequence[row_idx],
@@ -426,7 +429,7 @@ function parsePioneerLib(
                                                                     precursor_idx,
                                                                     precursors[precursor_idx],
                                                                     frags,
-                                                                    n_frags,
+                                                                    Int64(n_frags),
                                                                     frag_mz_min,
                                                                     frag_mz_max,
                                                                     y_start, b_start)
@@ -441,7 +444,7 @@ function parsePioneerLib(
                                             precursor_idx,
                                             precursors[precursor_idx],
                                             frags,
-                                            n_frags,
+                                            Int64(n_frags),
                                             max_rank_index,
                                             frag_mz_min,
                                             frag_mz_max,
